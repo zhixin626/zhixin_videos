@@ -1,0 +1,19 @@
+camera:
+  resolution: (1920, 1080)
+  background_color: "#000000"
+text:
+  font: "Mongolian Baiti"
+  alignment: "LEFT"
+directories:
+  base: "manim_dir"
+  subdirs:
+    output: "outputs"
+    raster_images: "raster_images"
+    vector_images: "vector_images"
+    sounds: "sounds"
+    data: "data"
+    downloads: "downloads"
+  cache: "cache"
+tex:
+  template: "ctex"
+universal_import_line: "from manim_imports_custom import *"
