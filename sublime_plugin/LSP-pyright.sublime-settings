@@ -1,0 +1,12 @@
+// Settings in here override those in "LSP-pyright/LSP-pyright.sublime-settings"
+
+{
+	"settings": {
+		"python.pythonPath": "D:\\manim\\venv\\Scripts\\python",
+		"python.venvPath": "D:\\manim",
+		"python.analysis.extraPaths": ["D:\\manim"],
+		"python.analysis.diagnosticMode": "workspace",
+	},
+
+	"enabled": true,
+}

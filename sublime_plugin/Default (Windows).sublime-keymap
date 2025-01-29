@@ -1,0 +1,21 @@
+[
+	  { "keys": ["shift+ctrl+r"], "command": "manim_run_scene" },
+    { "keys": ["ctrl+r"], "command": "manim_checkpoint_paste" },
+    { "keys": ["ctrl+t"], "command": "manim_skipped_checkpoint_paste" },
+    { "keys": ["ctrl+y"], "command": "manim_recorded_checkpoint_paste" },
+    { "keys": ["shift+ctrl+e"], "command": "manim_exit" },
+    { "keys": ["ctrl+alt+/"], "command": "comment_fold"},
+  
+    { "keys": ["alt+left"], "command": "go_to_begin"},
+    { "keys": ["alt+right"], "command": "go_to_end"},
+    { "keys": ["shift+up"], "command": "move", "args": {"by": "wholelines", "forward": false, "extend": true} },
+    { "keys": ["shift+down"], "command": "move", "args": {"by": "wholelines", "forward": true, "extend": true} },
+
+    {"keys":["ctrl+="],"command":"activate_myvideo_venv"},
+    {"keys":["ctrl+-"],"command":"activate_video_venv"},
+    {"keys":["ctrl+0"],"command":"activate_opengl_venv"},
+    {"keys":["alt+/"],"command":"chang_focus_window"},
+    { "keys": ["alt+-"], "command": "jump_back" },
+
+]
+
