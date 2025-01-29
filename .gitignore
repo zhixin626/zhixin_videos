@@ -1,0 +1,5 @@
+# For manim
+*.mp4
+*.wav
+*.mp3
+cache/
