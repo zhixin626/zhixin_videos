@@ -1,0 +1,13 @@
+{
+	"ignored_packages":
+	[
+		"Vintage",
+	],
+	"theme": "Adaptive.sublime-theme",
+	"font_size": 9,
+	"index_files": true,
+	"show_encoding" : true,
+    "translate_tabs_to_spaces": true,
+    "show_full_path": false,
+	"color_scheme": "Mariana.sublime-color-scheme",
+}
