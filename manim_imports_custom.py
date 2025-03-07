@@ -1,4 +1,7 @@
 from manimlib import *
+import itertools
+# search font:manimpango.list_fonts()
+# index_labels()
 # custom functions
 def get_current_frame_rectangle(frame,**kwargs):
     rec=Rectangle(
@@ -16,6 +19,44 @@ def get_current_frame_surface(frame,**kwargs):
     sf.move_to(frame.get_center())
     return sf
 # custom class
+class ArrowCustom(Arrow):
+    def __init__(self,
+        start=RIGHT*1.5,
+        angle: float=0,
+        length: float=1.5,
+        **kwargs):
+        direction=np.array([np.cos(angle), np.sin(angle), 0])
+        end = start + length*direction
+        super().__init__(start,end,**kwargs)
+    def point_to(self,mob,angle: float=0,buff: float=0.2):
+        if isinstance(mob,Mobject):
+            end=mob.get_center()
+        else:
+            end = np.array(mob)
+        length = get_norm(self.get_end() - self.get_start())
+        direction=np.array([np.cos(angle), np.sin(angle), 0])
+
+        end=end-buff*direction
+        start = end - length *direction 
+        self.put_start_and_end_on(start, end)
+        return self
+    def point_from(self,mob,angle: float=0,buff: float=0.2):
+        if isinstance(mob,Mobject):
+            start=mob.get_center()
+        else:
+            start=np.array(mob)
+        length = get_norm(self.get_end() - self.get_start())
+        direction=np.array([np.cos(angle), np.sin(angle), 0])
+        start=start+buff*direction
+        end = start + length*direction
+        self.put_start_and_end_on(start, end)
+        return self
+class Textch(Text):
+    def __init__(self, text:str, **kwargs):
+        super().__init__(text, font="SJsuqian", **kwargs)
+class Texten(Text):
+    def __init__(self, text:str, **kwargs):
+        super().__init__(text, font="Mongolian Baiti", **kwargs)
 class TransformFromCopy2(Transform):
     def __init__(self, mobject, target_mobject, **kwargs):
         super().__init__(mobject.copy(), target_mobject.copy(), **kwargs)

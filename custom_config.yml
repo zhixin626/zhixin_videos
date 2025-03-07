@@ -5,14 +5,13 @@ text:
   font: "Mongolian Baiti"
   alignment: "LEFT"
 directories:
-  base: "manim_dir"
+  mirror_module_path: True
+  removed_mirror_prefix: "D:/zhixin_videos"
+  base: "C:/Users/zhixin/OneDrive/Zhixin/"
   subdirs:
-    output: "outputs"
-    raster_images: "raster_images"
-    vector_images: "vector_images"
-    sounds: "sounds"
-    data: "data"
-    downloads: "downloads"
+    raster_images: "images/raster"
+    vector_images: "images/vector"
+    downloads: "manim_downloads"
   cache: "cache"
 tex:
   template: "ctex"
