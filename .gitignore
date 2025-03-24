@@ -3,3 +3,12 @@
 *.wav
 *.mp3
 cache/
+images/
+videos/
+scripts/
+voices/
+names/
+downloads/
+sounds/
+data/
+__pycache__/

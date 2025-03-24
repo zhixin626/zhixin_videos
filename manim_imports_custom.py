@@ -1,5 +1,6 @@
 from manimlib import *
 import itertools
+from typing import Optional
 # search font:manimpango.list_fonts()
 # index_labels()
 # custom functions
@@ -18,42 +19,83 @@ def get_current_frame_surface(frame,**kwargs):
     sf.apply_matrix(frame.get_inv_view_matrix()[:3,:3])
     sf.move_to(frame.get_center())
     return sf
+
+# custom scene
+import ctypes
+from ctypes import wintypes
+class InteractiveScene(InteractiveScene):
+    def place_window_ontop(self):
+        hwnd = self.window._window._hwnd
+        user32 = ctypes.windll.user32
+        SetWindowPos = user32.SetWindowPos
+        SetWindowPos.argtypes = (
+            wintypes.HWND,  # Handle to the window whose position is to be changed.
+            wintypes.HWND,  # Handle to the window to precede the positioned window in the Z order.
+            ctypes.c_int,   # X coordinate (ignored if SWP_NOMOVE flag is set).
+            ctypes.c_int,   # Y coordinate (ignored if SWP_NOMOVE flag is set).
+            ctypes.c_int,   # New width of the window (ignored if SWP_NOSIZE flag is set).
+            ctypes.c_int,   # New height of the window (ignored if SWP_NOSIZE flag is set).
+            ctypes.c_uint   # Flags that control window sizing, positioning, and visibility.
+        )
+        # Constants for setting window position:
+        HWND_TOPMOST   = -1  # Places the window above all non-topmost windows.
+        HWND_NOTOPMOST = -2  # Places the window above all non-topmost windows but below any topmost ones.
+        SWP_NOSIZE     = 0x0001  # Retains the current size (ignores width and height parameters).
+        SWP_NOMOVE     = 0x0002  # Retains the current position (ignores x and y parameters).
+        SWP_SHOWWINDOW = 0x0040  # Displays the window.
+        if not self.window._visible:
+            self.window._window.maximize()
+            self.window.to_default_position()
+        # Bring the window to the foreground by temporarily setting it as topmost.
+        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW)
+        # Remove the topmost attribute to allow normal window behavior while keeping it in front.
+        SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW)
+        
+
 # custom class
 class ArrowCustom(Arrow):
     def __init__(self,
-        start=RIGHT*1.5,
+        start= LEFT,
         angle: float=0,
         length: float=1.5,
+        end=None,
         **kwargs):
         direction=np.array([np.cos(angle), np.sin(angle), 0])
-        end = start + length*direction
+        if end is None:
+            end = start + length*direction
+        else:
+            end=end
         super().__init__(start,end,**kwargs)
-    def point_to(self,mob,angle: float=0,buff: float=0.2):
+    def point_to(self,mob,angle:float=0, buff:float=0.2,length:float=1.5):
         if isinstance(mob,Mobject):
             end=mob.get_center()
         else:
             end = np.array(mob)
-        length = get_norm(self.get_end() - self.get_start())
         direction=np.array([np.cos(angle), np.sin(angle), 0])
-
         end=end-buff*direction
         start = end - length *direction 
         self.put_start_and_end_on(start, end)
         return self
-    def point_from(self,mob,angle: float=0,buff: float=0.2):
+    def point_from(self,mob,angle:float=0, buff:float=0.2,length:float=1.5):
         if isinstance(mob,Mobject):
             start=mob.get_center()
         else:
             start=np.array(mob)
-        length = get_norm(self.get_end() - self.get_start())
         direction=np.array([np.cos(angle), np.sin(angle), 0])
         start=start+buff*direction
         end = start + length*direction
         self.put_start_and_end_on(start, end)
         return self
+    def put_to_start(self,mob,buff=0.3):
+        mob.move_to(self.get_start())
+        mob.shift(-self.get_unit_vector()*buff)
+    def put_to_end(self,mob,buff=0.3):
+        mob.move_to(self.get_end())
+        mob.shift(self.get_unit_vector()*buff)
 class Textch(Text):
     def __init__(self, text:str, **kwargs):
         super().__init__(text, font="SJsuqian", **kwargs)
+        self.set_fill(WHITE,1,0)
 class Texten(Text):
     def __init__(self, text:str, **kwargs):
         super().__init__(text, font="Mongolian Baiti", **kwargs)
@@ -65,7 +107,7 @@ class TransformFromCopy2(Transform):
         scene.remove(self.target_mobject)
 class TextCustom(VGroup):
     def __init__(self, 
-        en=None                   ,ch=None,
+        en: Optional[str]=None                   ,ch: Optional[str]=None,
         direction=DOWN,
         buff=0.2,
         font_en="Mongolian Baiti" ,font_ch="SJsuqian",
@@ -73,8 +115,8 @@ class TextCustom(VGroup):
         en_config=dict()          ,ch_config=dict(),
         **kwargs):
         super().__init__()
-        self.en = None
-        self.ch = None
+        self.en: Optional[Text] = None
+        self.ch: Optional[Text] = None
         if en is not None:
             self.en = Text(en, font=font_en, font_size=font_size_en,**en_config)
             self.add(self.en)
@@ -83,89 +125,6 @@ class TextCustom(VGroup):
             self.add(self.ch)
         if self.en and self.ch:
             self.ch.next_to(self.en, direction, buff=buff,**kwargs)
-
-class MatrixCustom(Matrix):
-    def __init__(self,matrix_arr,color_palette=[TEAL_B,YELLOW,BLUE,RED_A],**kwargs):
-        super().__init__(matrix_arr,**kwargs)
-        # attributes
-        self.nparr=matrix_arr # just easy to get matrix array
-        self.number_of_columns=len(self.nparr[0,:])
-        self.color_palette=color_palette
-        # position
-        self.to_corner(UL)
-        # colors
-        self.set_col_colors()
-        self.bracket_color=WHITE
-        self.brackets.set_color(self.bracket_color)
-    def set_col_colors(self):
-        for i in range(self.number_of_columns):
-            self.columns[i].set_color(self.color_palette[i])
-    def get_linear_combination(self,**kwargs):
-        # 
-        coefficients=['a','b','c','d','e']
-        a=Tex('a').set_color(self.color_palette[0])
-        first_vector=self.get_matrix_nth_column_vector(0)
-        vector_matrices=self.get_all_column_vectors()
-        grp=VGroup(a,vector_matrices[0])
-        self.parts=VGroup(a)
-        for i in range(self.number_of_columns-1):
-            plus=Tex('+')
-            tex=Tex(coefficients[i+1]).set_color(self.color_palette[i+1])
-            vec=vector_matrices[i+1]
-            grp.add(plus,tex,vec)
-            self.parts.add(VGroup(plus,tex))
-        grp.arrange(RIGHT,**kwargs).to_corner(UR)
-        self.vector_matrices=vector_matrices
-        self.linear_combination=grp
-        return self.linear_combination
-    def get_changeable_parts(self,places=1,font_size=30,first_buff=0.2,inner_buff=0.1):
-        number_of_parts=len(self.parts)
-        changeable_parts=VGroup()
-        for i in range(number_of_parts):
-            if i == 0 :
-                number=DecimalNumber(1,num_decimal_places=places,include_sign=True,font_size=font_size)
-                VGroup(number[0],number[1:]).arrange(RIGHT,buff=inner_buff)
-                number[0].set_color(WHITE)
-                number[1:].set_color(self.color_palette[i])
-                number.move_to(self.parts[i]).shift(LEFT*first_buff)
-            else :
-                number=DecimalNumber(1,num_decimal_places=places,include_sign=True,font_size=font_size)
-                VGroup(number[0],number[1:]).arrange(RIGHT,buff=inner_buff)
-                number[0].set_color(WHITE)
-                number[1:].set_color(self.color_palette[i])
-                number.move_to(self.parts[i])
-            changeable_parts.add(number)
-        self.changeable_parts=changeable_parts
-        return self.changeable_parts
-    def get_all_column_vectors(self):
-        grp=VGroup()
-        for i in range(self.number_of_columns):
-            grp.add(self.get_matrix_nth_column_vector(i))
-        grp.arrange(RIGHT)
-        return grp
-    def get_matrix_nth_column_vector(self,nth):
-        new_arr=self.nparr[:,nth:nth+1]
-        new_mat=MatrixCustom(new_arr)
-        new_mat.nparr=new_arr
-        new_mat.set_color(self.color_palette[nth])
-        new_mat.brackets.set_color(self.bracket_color)
-        return new_mat
-    def get_column_arrows(self,ax,**kwargs):
-        grp=VGroup()
-        for i in range(self.number_of_columns):
-            if i ==3:
-                arrow=Arrow(ax.c2p_4d(0,0,0,0),ax.c2p_4d(*self.nparr[:,i]),buff=0,**kwargs)
-            else:
-                arrow=Arrow(ax.c2p(0,0,0),ax.c2p(*self.nparr[:3,i]),buff=0,**kwargs)
-            arrow.nparr=self.nparr[:,i]
-            arrow.set_color(self.color_palette[i])
-            grp.add(arrow)
-        return grp
-
-
-
-
-
 
 class ThreeDAxesCustom(ThreeDAxes):
     def __init__(

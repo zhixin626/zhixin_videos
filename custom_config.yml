@@ -1,18 +1,41 @@
+directories:
+  just_mirror_pythonfiles: True
+  base: ""
+  subdirs:
+    output: "videos"
+    raster_images: "images\\raster"
+    vector_images: "images\\vector"
+    downloads: "downloads"
+    sounds: "sounds"
+    data: "data"
+    cache: "cache"
+window:
+  position_string: UR
+  monitor_index: 0
+  full_screen: False
 camera:
   resolution: (1920, 1080)
   background_color: "#000000"
+  fps: 30
+  background_opacity: 1.0
 text:
   font: "Mongolian Baiti"
   alignment: "LEFT"
-directories:
-  mirror_module_path: True
-  removed_mirror_prefix: "D:/zhixin_videos"
-  base: "C:/Users/zhixin/OneDrive/Zhixin/"
-  subdirs:
-    raster_images: "images/raster"
-    vector_images: "images/vector"
-    downloads: "manim_downloads"
-  cache: "cache"
 tex:
   template: "ctex"
+scene:
+  show_animation_progress: True
+  leave_progress_bars: True
+  preview_while_skipping: True
+  default_wait_time: 1.0
+vmobject:
+  default_stroke_width: 3.0
+sizes:
+  frame_height: 8.0
+  small_buff: 0.1
+  med_small_buff: 0.25
+  med_large_buff: 0.5
+  large_buff: 1.0
+  default_mobject_to_edge_buff: 0.5
+  default_mobject_to_mobject_buff: 0.25
 universal_import_line: "from manim_imports_custom import *"

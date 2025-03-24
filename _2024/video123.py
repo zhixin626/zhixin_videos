@@ -1,5 +1,81 @@
 from manim_imports_custom import *
-
+class MatrixCustom(Matrix):
+    def __init__(self,matrix_arr,color_palette=[TEAL_B,YELLOW,BLUE,RED_A],**kwargs):
+        super().__init__(matrix_arr,**kwargs)
+        # attributes
+        self.nparr=matrix_arr # just easy to get matrix array
+        self.number_of_columns=len(self.nparr[0,:])
+        self.color_palette=color_palette
+        # position
+        self.to_corner(UL)
+        # colors
+        self.set_col_colors()
+        self.bracket_color=WHITE
+        self.brackets.set_color(self.bracket_color)
+    def set_col_colors(self):
+        for i in range(self.number_of_columns):
+            self.columns[i].set_color(self.color_palette[i])
+    def get_linear_combination(self,**kwargs):
+        # 
+        coefficients=['a','b','c','d','e']
+        a=Tex('a').set_color(self.color_palette[0])
+        first_vector=self.get_matrix_nth_column_vector(0)
+        vector_matrices=self.get_all_column_vectors()
+        grp=VGroup(a,vector_matrices[0])
+        self.parts=VGroup(a)
+        for i in range(self.number_of_columns-1):
+            plus=Tex('+')
+            tex=Tex(coefficients[i+1]).set_color(self.color_palette[i+1])
+            vec=vector_matrices[i+1]
+            grp.add(plus,tex,vec)
+            self.parts.add(VGroup(plus,tex))
+        grp.arrange(RIGHT,**kwargs).to_corner(UR)
+        self.vector_matrices=vector_matrices
+        self.linear_combination=grp
+        return self.linear_combination
+    def get_changeable_parts(self,places=1,font_size=30,first_buff=0.2,inner_buff=0.1):
+        number_of_parts=len(self.parts)
+        changeable_parts=VGroup()
+        for i in range(number_of_parts):
+            if i == 0 :
+                number=DecimalNumber(1,num_decimal_places=places,include_sign=True,font_size=font_size)
+                VGroup(number[0],number[1:]).arrange(RIGHT,buff=inner_buff)
+                number[0].set_color(WHITE)
+                number[1:].set_color(self.color_palette[i])
+                number.move_to(self.parts[i]).shift(LEFT*first_buff)
+            else :
+                number=DecimalNumber(1,num_decimal_places=places,include_sign=True,font_size=font_size)
+                VGroup(number[0],number[1:]).arrange(RIGHT,buff=inner_buff)
+                number[0].set_color(WHITE)
+                number[1:].set_color(self.color_palette[i])
+                number.move_to(self.parts[i])
+            changeable_parts.add(number)
+        self.changeable_parts=changeable_parts
+        return self.changeable_parts
+    def get_all_column_vectors(self):
+        grp=VGroup()
+        for i in range(self.number_of_columns):
+            grp.add(self.get_matrix_nth_column_vector(i))
+        grp.arrange(RIGHT)
+        return grp
+    def get_matrix_nth_column_vector(self,nth):
+        new_arr=self.nparr[:,nth:nth+1]
+        new_mat=MatrixCustom(new_arr)
+        new_mat.nparr=new_arr
+        new_mat.set_color(self.color_palette[nth])
+        new_mat.brackets.set_color(self.bracket_color)
+        return new_mat
+    def get_column_arrows(self,ax,**kwargs):
+        grp=VGroup()
+        for i in range(self.number_of_columns):
+            if i ==3:
+                arrow=Arrow(ax.c2p_4d(0,0,0,0),ax.c2p_4d(*self.nparr[:,i]),buff=0,**kwargs)
+            else:
+                arrow=Arrow(ax.c2p(0,0,0),ax.c2p(*self.nparr[:3,i]),buff=0,**kwargs)
+            arrow.nparr=self.nparr[:,i]
+            arrow.set_color(self.color_palette[i])
+            grp.add(arrow)
+        return grp
 class video1(InteractiveScene):
     def construct(self):
         # init
