@@ -18,7 +18,32 @@ class test_dir(InteractiveScene):
         kun=Kun()
         self.add(kun)
         manim_config
+class test_bullet(InteractiveScene):
+    def construct(self):
+        # init
+        frame=self.frame
+        # start
+        import xml.etree.ElementTree as ET
+        xml_data = "<book><title>Python</title></book>"
+        root = ET.fromstring(xml_data)
+        print(root.tag)  #
+        print(root[0].text)  
 
+        a1=Tex("八八八哈哈哈123")
+        a2=Tex("abc")
+        a1.svg_string
+        a2.svg_string
+        self.add(a1)
+        a=Text("a")
+        # SVGMobject().file_name_to_svg_string()
+        t=SVGMobject(svg_string=a.svg_string)
+        self.add(t)
+        t.match_style(a)
+        b=BulletedList("hah","lala","我","oo")
+        self.add(b)
+        self.play(b.animate.fade_all_but(3))
+        
+        
 class ReadNames(InteractiveScene):
     def read_names(self,filename):
         if not filename.endswith('.txt'):

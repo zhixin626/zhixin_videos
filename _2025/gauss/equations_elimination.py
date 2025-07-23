@@ -1,7 +1,7 @@
 from manim_imports_custom import *
 from fractions import Fraction
-from _2025.kun_character import Kun,YellowChicken 
-from _2025.elimination import * 
+from _2025.gauss.kun_character import Kun,YellowChicken 
+from _2025.gauss.elimination import * 
 class test_sound(InteractiveScene):
     def construct(self):
         # init

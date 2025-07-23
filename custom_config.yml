@@ -1,6 +1,6 @@
 directories:
-  just_mirror_pythonfiles: True
-  base: ""
+  just_mirror_pythonfiles: True # if true,output dictionary mirrors python files
+  base: "" # will be modified by --basefromfile
   subdirs:
     output: "videos"
     raster_images: "images\\raster"
@@ -25,7 +25,7 @@ tex:
   template: "ctex"
 scene:
   show_animation_progress: True
-  leave_progress_bars: True
+  leave_progress_bars: False
   preview_while_skipping: True
   default_wait_time: 1.0
 vmobject:
