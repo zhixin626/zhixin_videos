@@ -1,86 +1,275 @@
-from scipy.spatial import transform
 from manim_imports_custom import *
-from itertools import cycle
 from typing import Tuple
-def smooth_decay(t):
-    return np.sin(6 * PI * t) * np.exp(-5 * t**1.5)
-def get_special_dot(
-    color=YELLOW,
-    radius=0.07,
-    glow_radius_multiple=3,
-    glow_factor=1.5
-):
-    return Group(
-        TrueDot(radius=radius).make_3d(),
-        GlowDot(radius=radius * glow_radius_multiple, glow_factor=glow_factor)
-    ).set_color(color)
-class scene1(InteractiveScene):
+from _2025.sphere.useful import *
+class end_ch(InteractiveScene):
     def construct(self):
         # init
         frame=self.frame
+        light=self.camera.light_source
+        # setup
+
+        def line_func(x):
+            return x**2+1
+        def surface_func(u, v):
+            return (v, np.cos(u) * line_func(v), np.sin(u) * line_func(v))
+        def get_cap(x0,direction="right"):
+            R=line_func(x0)
+            cap=ParametricSurface(
+                lambda u,r:(x0,r*np.sin(u),r*np.cos(u)),
+                u_range=(0,TAU),v_range=(0,R),resolution=(32,8))
+            normals = np.tile(np.array([0.02, 0.0, 0.0]), (cap.data["point"].shape[0], 1))
+            cap.data["d_normal_point"] = cap.data["point"] + normals
+            cap.note_changed_data()
+            if direction=="right":
+                return cap
+            elif direction=="left":
+                return cap.invert_normals()
+            else:
+                raise ValueError(f"Invalid direction: {direction}. Must be 'right' or 'left'.")
+
         # start
+        RAIDUS=2
+        frame.reorient(28, 69, 0, (0.19, 0.62, 0.51))
         ax=ThreeDAxesCustom()
         ax.add_axis_labels()
-        sp=Sphere(color=BLUE,radius=2)
-        sp.set_opacity(0.5)
-        frame.reorient(24, 46, 0, (0.35, 0.88, 0.56), 8.69)
-        self.add(ax)
+        ax.set_opacity(0.5)
+        ball=Sphere(radius=RAIDUS,clockwise=True,prefered_creation_axis=0)
+        sf=ParametricSurface(
+            surface_func,
+            u_range=(0,TAU),v_range=(-1,1),resolution=(101,51))
+        sf.set_opacity(1)
 
-        # 参数配置
-        radius = 2
-        cube_size = 0.15
-        spacing = 0.3
+        sf_top=ParametricSurface(
+            surface_func,
+            u_range=(0,PI),v_range=(-1,1),resolution=(101,51))
+        sf_bottom=ParametricSurface(
+            surface_func,
+            u_range=(PI,TAU),v_range=(-1,1),resolution=(101,51))
 
-        # 坐标网格生成
-        x_vals = np.arange(-radius, radius + spacing, spacing)
-        y_vals = np.arange(-radius, radius + spacing, spacing)
-        z_vals = np.arange(-radius, radius + spacing, spacing)
+        def r_func(x):
+            x = np.clip(x, -RAIDUS, RAIDUS)
+            return np.sqrt(RAIDUS**2 - x**2)
+        def ball_func(u, v):
+            return (v, np.cos(u) * r_func(v), np.sin(u) * r_func(v))
+        NUDGE=1e-3
+        ball_top=ParametricSurface(
+            ball_func,
+            u_range=(0,PI),v_range = (-RAIDUS+NUDGE, RAIDUS-NUDGE),resolution=(101,51))
+        ball_bottom=ParametricSurface(
+            ball_func,
+            u_range=(PI,TAU),v_range = (-RAIDUS+NUDGE, RAIDUS-NUDGE),resolution=(101,51))
+        sf.always_sort_to_camera(self.camera)
+        cap1=get_cap(-1,direction="left")
+        cap2=get_cap(1,direction="right")
+        mesh_ball=SurfaceMesh(ball)
+        mesh_ball.set_anti_alias_width(1)
+        frame.clear_updaters()
+        frame.add_ambient_rotation(angular_speed=-2*DEG)
+        ball.set_opacity(1)
+        ball_top.set_opacity(1)
+        ball_bottom.set_opacity(1)
+        ball.always_sort_to_camera(self.camera)
+        ball_top.always_sort_to_camera(self.camera)
+        ball_bottom.always_sort_to_camera(self.camera)
+        self.play(ShowCreation(ball),
+            # Write(mesh_ball),
+            Write(ax))
+        self.wait(5)
+        self.remove(ball)
+        self.add(ball_top,ball_bottom,
+            # mesh_ball,
+            ax)
 
-        cubes = Group()
+        # test
+        self.play(
+            ReplacementTransform(ball_top,sf_top),
+            ReplacementTransform(ball_bottom,sf_bottom),
+            GrowFromCenter(cap1),
+            GrowFromCenter(cap2),
+            # FadeOut(mesh_ball),
+            run_time=2)
+        self.remove(sf_top,sf_bottom)
+        self.add(sf,ax)
+        self.wait(3)
 
-        # 选出在球体内的小立方体
-        for x in x_vals:
-            for y in y_vals:
-                for z in z_vals:
-                    if x**2 + y**2 + z**2 <= (radius-0.1)**2:
-                        cube = Cube(side_length=cube_size,shading=(0,1,0))\
-                        .move_to([x, y, z],
-                            )
-                        cube.set_color(BLUE, opacity=1)
-                        cubes.add(cube)
+        # title
+        # t=Text("Calculus").scale(1.5).to_corner(UL).fix_in_frame()
+        t=Textch("微积分").scale(1.3).to_corner(UL).fix_in_frame()
+        underline=Underline(t,stroke_color=YELLOW).fix_in_frame()
+        self.play(LaggedStartMap(FadeIn,VGroup(t,underline),shift=RIGHT,lag_ratio=0.2))
+        self.wait(2)
 
-        # 按照 z 高度排序（从下往上）
-        cubes.sort(lambda c: c[2])
+        # sf
+        def get_segments(n=10):
+            v_min, v_max = -1, 1
+            segments = SGroup()
+            for i in range(n):
+                a = v_min + i * (v_max - v_min) / n
+                b = v_min + (i+1) * (v_max - v_min) / n
+                seg = ParametricSurface(
+                    surface_func,
+                    u_range=(0, TAU),
+                    v_range=(a, b),
+                    resolution=(101, 11)  # 注意 v 的分辨率要小一点
+                ).invert_normals()
+                seg.add(get_cap(a,direction="left"))
+                seg.add(get_cap(b,direction="right"))
+                segments.add(seg)
+            return segments
+        segments=get_segments(15)
+        self.remove(sf,cap2,cap1)
+        self.add(segments,ax)
+        self.play(segments.animate.arrange(RIGHT,buff=0.5))
+        self.wait()
 
-        self.add(cubes)
+        # tex
+        text=VGroup(
+            # Text("Volume"),
+            Textch("体积"),
+            Tex(R"=\int dv"))\
+            .arrange(RIGHT).fix_in_frame().to_edge(UP)
+        self.play(
+            LaggedStart(
+            *[FadeOutToPoint2(segments[i].copy(),
+            frame.from_fixed_frame_point(text[1]["dv"].get_center()))
+            for i in range(0,len(segments))]
+            ),
+            Write(text[1][R"=\int"]),
+            FadeIn(text[0],shift=RIGHT),
+            FadeIn(text[1][R"dv"],time_span=[1,2]),
+            segments.animate.arrange(RIGHT,buff=0).set_anim_args(time_span=[1,2]),
+            run_time=2)
+        self.wait(6)
 
-        self.play(ShowCreation(cubes),ShowCreation(sp))
 
-        # light
-        light = self.camera.light_source
-        light_dot = GlowDot(color=WHITE, radius=0.5)
-        light_dot.always.move_to(light)
-        self.add(light, light_dot)
-        light.save_state()
-        self.play(light.animate.move_to(sp.get_bottom()*3), run_time=5)
-        self.play(light.animate.shift(10 * OUT), run_time=5)
-        self.play(light.animate.restore())
 
-        # 球体参考外壳
-        # sphere = Sphere(radius=radius)
-        # sphere.set_opacity(0)
 
-        # 逐批显示小立方体
-        # batch_size = 5
-        # for i in range(0, len(cubes), batch_size):
-        #     self.play(
-        #         *[FadeIn(cube, shift=DOWN, scale=0.9) for cube in cubes[i:i+batch_size]],
-        #         run_time=0.3
-        #     )
 
-        # self.wait(2)
 
-        # self.add(sphere)
+class begin_ch(InteractiveScene):
+    def construct(self):
+        # init
+        frame=self.frame
+        light=self.camera.light_source
+        # start
+        # title=Text("Geometric Results Known to Archimedes")
+        title=Textch("阿基米德时代已经知道的知识",font='Microsoft YaHei')
+        title.to_edge(UP)
+        under_line=Underline(title,stroke_color=YELLOW)
+        ax=ThreeDAxesCustom()
+        ax.add_axis_labels()
+        title.fix_in_frame()
+        under_line.fix_in_frame()
+        self.add(under_line)
+        self.add(title)
+
+        # setup
+        # knowns=VGroup(
+        #     Text("Area of a circle:").fix_in_frame(),
+        #     Text("Volume of a cylinder:").fix_in_frame(),
+        #     Text("Volume of a cone:").fix_in_frame(),
+        #     ).scale(0.7).arrange(DOWN,aligned_edge=LEFT,buff=1).to_edge(LEFT)
+        knowns=VGroup(
+            Textch("圆的面积公式：",font='Microsoft YaHei').fix_in_frame(),
+            Textch("圆柱的体积公式：",font='Microsoft YaHei').fix_in_frame(),
+            Textch("圆锥的体积公式：",font='Microsoft YaHei').fix_in_frame(),
+            ).scale(0.7).arrange(DOWN,aligned_edge=LEFT,buff=1).to_edge(LEFT)
+        eqns=VGroup(
+            Tex(r"\pi r^2"),
+            Tex(r"\pi r^2 h"),
+            Tex(R"\frac{1}{3} \pi r^2 h"),
+            ).scale(0.7).set_color(YELLOW)
+        for eqn,known in zip(eqns,knowns):
+            eqn.next_to(known,RIGHT).fix_in_frame()
+        self.add(knowns)
+
+        # dsk
+        circle=Disk3DPatched(opacity=0.5)
+        line=Line(start=ORIGIN,stroke_color=WHITE).set_z(0.001)
+        line.apply_depth_test()
+        label_r=Tex("r")
+        def updater(mob):
+            center=line.get_center()
+            direction=rotate_vector(line.get_unit_vector(),90*DEG)
+            mob.move_to(center+direction*0.2)
+        eq=Tex(r"\pi r^2 h").next_to(circle,buff=1)
+        label_r.add_updater(updater)
+        self.play(ShowCreation(line),Write(label_r))
+        self.play(
+            FadeIn(eq[r"\pi r^2"],shift=RIGHT),
+            Rotating(line,angle=TAU,about_point=ORIGIN),
+            ShowCreation(circle),run_time=2,rate_func=linear)
+        self.play(ReplacementTransform(eq[r"\pi r^2"][0].copy(),eqns[0]))
+        self.wait()
+
+        # cylinder
+        cylinder=CylinderCustom()
+        cylinder.get_bottom_cap()
+        cylinder.get_top_cap()
+        temp=Line(np.array([1,0,0]),np.array([1,0,2]))
+        br=Brace(cylinder,RIGHT,buff=0.1).rotate(PI/2,axis=RIGHT)
+        h=Tex("h").rotate(PI/2,axis=RIGHT)
+        br.put_at_tip(h)
+        self.play(frame.animate.reorient(8, 41, 0, (-0.41, 0.64, 0.84), 8.00))
+        self.play(
+            GrowFromCenter(br),
+            Write(h),
+            ShowCreation(cylinder),
+            circle.animate.move_to(cylinder.top_cap),
+            line.animate.shift(OUT*2),
+            label_r.animate.shift(OUT*2),
+            eq.animate.shift(OUT*2),
+            )
+        self.wait()
+        self.play(ReplacementTransform(eq.copy(),eqns[1]))
+        self.wait()
+
+
+        # cone
+        cone=ConePatched(prefered_creation_axis=0)
+        cone.get_bottom_cap()
+        eq_cone=Tex(R"\frac{1}{3} \pi r^2 h").move_to(eq).shift(RIGHT*0.3)
+        cy=CylinderCustom().move_to((4,0,1))
+        cy.get_top_cap().set_x(4)
+        cy.get_bottom_cap().set_x(4)
+        dsk=Disk3DPatched().move_to((-4,0,1)).rotate(PI/2,axis=RIGHT)
+        cone_grp=SGroup(cone,cone.bottom_cap)
+        cylinder_grp=SGroup(cy,cy.top_cap,cy.bottom_cap)
+        self.play(
+            ShrinkToCenter(circle),
+            frame.animate.reorient(8, 46, 0, (0.03, 0.63, 0.76)),
+            ReplacementTransform(cylinder,cone),
+            ReplacementTransform(eq,eq_cone[R"\pi r^2 h"][0]),
+            FadeIn(eq_cone[R"\frac{1}{3}"],shift=RIGHT),
+            run_time=2
+            )
+        self.play(ReplacementTransform(eq_cone,eqns[2]))
+        self.wait()
+        self.play(
+            LaggedStartMap(FadeOut,knowns,shift=LEFT),
+            LaggedStartMap(FadeOut,eqns,shift=LEFT),
+            LaggedStartMap(FadeOut,VGroup(h,label_r,br,line),shift=RIGHT),
+            FadeIn(cone.bottom_cap),
+            FadeIn(cylinder_grp,shift=LEFT),
+            FadeIn(dsk,shift=RIGHT),
+            )
+        self.play(frame.animate.reorient(-7, 91, 0, (-0.07, -0.03, 1.05), 8.00))
+
+        # center of mass
+        l1=DashedLine(np.array([-4,0,2.5]),np.array([-4,0,-0.5]))
+        l2=DashedLine(np.array([0,0,2.5]),np.array([0,0,-0.5]))
+        l3=DashedLine(np.array([4,0,2.5]),np.array([4,0,-0.5]))
+        c1=Dot(dsk.get_center()).rotate(PI/2,axis=RIGHT)
+        c2=Dot(np.array([0,0,0.5])).rotate(PI/2,axis=RIGHT)
+        c3=Dot(cy.get_center()).rotate(PI/2,axis=RIGHT)
+        self.play(LaggedStartMap(ShowCreation,VGroup(l1,l2,l3)),run_time=1)
+        self.play(
+            ReplacementTransform(c1.copy().scale(10),c1),
+            ReplacementTransform(c2.copy().scale(10),c2),
+            ReplacementTransform(c3.copy().scale(10),c3),
+            )
+
+
 class scene2(InteractiveScene):
     def construct(self):
         # init
@@ -905,11 +1094,8 @@ class scene2(InteractiveScene):
         LEN=abs(dsks_x2[i].get_y())-abs(dsks_y2[i].get_y())
         self.play(
             frame.animate.reorient(46, -9, 0, (0.47, 0.84, 0.0), 7.59),
+            tracker.animate.set_value(tracker_list[i]),
             rate_func=smooth)
-        self.play(tracker.animate.set_value(tracker_list[i]),
-            rate_func=smooth)
-        # piy=Tex(r"\pi y^2").rotate(PI/2,axis=UP)
-        # piy.set_color(BLUE).set_opacity(0.8).move_to(dsks_y[i])
         v_line.suspend_updating()
         self.play(ShowCreation(dsks_y[i]),
             Rotate(v_line,angle=TAU,about_point=ORIGIN,axis=RIGHT),)
@@ -970,17 +1156,27 @@ class scene2(InteractiveScene):
         self.play(frame.animate.reorient(0, -4, 0, (-0.53, -1.98, 0.65), 11.98))
         ar1=ArrowCustom().point_to(x_coord).set_color(RED)
         ar2=ArrowCustom().point_to(x_coord,angle=PI).set_color(RED)
-        self.play(GrowArrow(ar1),GrowArrow(ar2))
+        ar1.rotate(6*DEG,about_point=x_coord.get_center())
+        ar2.rotate(6*DEG,about_point=x_coord.get_center())
+        ar1.shift(DOWN*0.5)
+        ar2.shift(DOWN*0.5)
+        x_brace=Brace(Line(ORIGIN,dsks_z[i].get_center()),DOWN)
+        x_coord.suspend_updating()
+        x_coord.save_state()
+        self.play(GrowArrow(ar1),GrowArrow(ar2),
+            GrowFromCenter(x_brace),
+            x_coord.animate.next_to(x_brace.get_tip(),DOWN).set_opacity(1)\
+            .rotate(6*DEG))
         self.play(Indicate(x_coord,4,RED),FadeOut(ar1),FadeOut(ar2))
+
         # opacity to 0.3
         opacity_grp=Group(diameter3,brace3,diameter_label3,
            coord_00,coord_2a,x_coord,y_coord,coord,
            graph,graph_label,
-           dashline1,dashline2 )
+           dashline1,dashline2,x_brace )
         OPACITY1=0.3
         OPACITY2=0.8
         OPACITY3=OPACITY2-0.3
-        # dsks_z[i].rotate(3*DEG,about_point=ORIGIN)
         temp1=dsks_z[i].copy().rotate(3*DEG,about_point=ORIGIN).move_to(beam.get_end())
         temp2=dsks_z[i].copy().rotate(3*DEG,about_point=ORIGIN)
         self.play(Transform(dsks_z[i],temp1,path_arc=150*DEG))
@@ -992,10 +1188,27 @@ class scene2(InteractiveScene):
             circle.animate.set_fill(opacity=0).set_stroke(opacity=OPACITY1),
             dsks_x2[i].animate.set_opacity(OPACITY2),
             dsks_y2[i].animate.set_opacity(OPACITY2),
-            dsks_z[i].animate.set_opacity(OPACITY2),)
-        self.play(Rotate(grp,-6*DEG,about_point=ORIGIN),
-            Rotate(dsks_z[i],-3*DEG,about_point=ORIGIN))
+            dsks_z[i].animate.set_opacity(OPACITY2),
+            )
+        self.wait()
         self.play(
+            diameter_label3.animate.set_opacity(1),
+            brace3.animate.set_opacity(1),
+            x_coord.animate.set_opacity(1),
+            x_brace.animate.set_opacity(1),
+            )
+        self.wait(3)
+
+        # describe eqn
+        self.play(Rotate(grp,-6*DEG,about_point=ORIGIN),
+            Rotate(dsks_z[i],-3*DEG,about_point=ORIGIN),
+            x_coord.animate.rotate(-6*DEG))
+        self.wait()
+        self.play(
+            FadeOut(x_brace),
+            diameter_label3.animate.set_opacity(OPACITY1),
+            brace3.animate.set_opacity(OPACITY1),
+            x_coord.animate.set_opacity(OPACITY1).resume_updating(),
             frame.animate.reorient(1, -6, 0, (-0.81, -3.81, 0.86), 17.11),
             )
         self.wait()
@@ -1139,7 +1352,8 @@ class scene2(InteractiveScene):
         self.play(frame.animate.reorient(0, -4, 0, (1.05, -0.39, -0.21), 10.55))
         frame.add_ambient_rotation(-1*DEG)
         self.wait()
-        self.play(ReplacementTransform(origin.copy().scale(10),origin),
+        self.play(
+            ReplacementTransform(origin.copy().scale(10),origin),
             ReplacementTransform(centr.copy().scale(10),centr),
             ReplacementTransform(right.copy().scale(10),right),
             coord_00.animate.set_opacity(1),
@@ -1245,7 +1459,21 @@ class testwag(InteractiveScene):
         self.play(flag.animate.wag(direction=IN),rate_func=there_and_back)
 
         
-        
+class yxsquare(InteractiveScene):
+    def construct(self):
+        # init
+        frame=self.frame
+        light=self.camera.light_source
+        # start
+        ax=ThreeDAxesCustom()
+        def func(u, v):
+            return v,v*np.tan(u),v**2+v**2*np.tan(u)**2
+        a=ParametricSurface(func,u_range=(0,TAU),v_range=(-1,1))
+        self.add(a)
+        self.add(ax)
+
+
+
         
 
 class RevolvedCylinder(Surface):
@@ -1294,8 +1522,10 @@ class testdsk3d(InteractiveScene):
         # init
         frame=self.frame
         # start
-        dsk=Disk3D2()
-        self.add(dsk)
+        sf=Surface()
+        self.add(sf)
+        sf.get_points()
+        sf.data['d_normal_point']
         
 class Disk3D2(Surface):
     def __init__(
@@ -1442,50 +1672,7 @@ class testcone(InteractiveScene):
         self.play(ShowCreation(cone),run_time=2,rate_func=linear)
         
 
-class FadeInFromPoint2(FadeIn):
-    def __init__(self, mobject: Mobject, point, **kwargs):
-        super().__init__(
-            mobject,
-            shift=mobject.get_center() - point,
-            scale=np.inf,
-            **kwargs,
-        )
-    def create_starting_mobject(self) -> Mobject:
-        start = super().create_starting_mobject()
-        start.set_opacity(0.6)
-        start.scale(0)
-        # start.shift(-self.shift_vect)
-        return start
 
-class FadeOutToPoint2(FadeOut):
-    def __init__(self, mobject: Mobject, point,final_opacity=0.3 ,**kwargs):
-        self.final_opacity=final_opacity
-        super().__init__(
-            mobject,
-            shift=point - mobject.get_center(),
-            scale=0,
-            **kwargs,
-        )
-    def create_target(self) -> Mobject:
-        result = self.mobject.copy()
-        result.set_opacity(self.final_opacity)
-        result.shift(self.shift_vect)
-        result.scale(self.scale_factor)
-        return result
-
-
-class testfixinframe(InteractiveScene):
-    def construct(self):
-        # init
-        frame=self.frame
-        # start
-        eq=Tex("a+b=c").to_corner(UL)
-        self.add(eq)
-        frame.reorient(0, 0, 0, (-5.11, 6.0, 0.0), 6.39)
-        # teat1
-        eq.fix_in_frame()
-        eq.shift(-frame.get_center())
-        eq.scale(1/frame.get_scale(),about_point=ORIGIN)
 
 
 class GrowCircleFill(Animation):
@@ -1529,6 +1716,40 @@ class testgrowsector(InteractiveScene):
         self.add(sf)
         self.play(ShowCreation(sf))
 
+class test_always_sort_to_camera(InteractiveScene):
+    def construct(self):
+        # --- 1) 定义一个球面（参数曲面） ---
+        # spherical coordinates: theta∈(0,π), phi∈(0,2π)
+        def sphere_uv(theta, phi, R=2.0):
+            x = R*np.sin(theta)*np.cos(phi)
+            y = R*np.sin(theta)*np.sin(phi)
+            z = R*np.cos(theta)
+            return (x, y, z)
+
+        u_range = (1e-3, PI-1e-3)  # 避免极点奇异 / avoid singularities at the poles
+        v_range = (0, TAU)
+
+        # --- 2) 左（不排序）& 右（实时排序）两个球 ---
+        left = ParametricSurface(
+            uv_func=sphere_uv,
+            u_range=u_range,
+            v_range=v_range,
+            resolution=(60, 120),
+            color=BLUE,
+            shading=(0.5, 0.2, 0.4),   # 反射/高光/阴影 reflectiveness/gloss/shadow
+            depth_test=True,
+        ).set_opacity(0.4)
+
+        right = left.copy()
+
+        group = SGroup(left, right).arrange(RIGHT, buff=2)
+        self.add(group)
+        self.wait()
+
+        # --- 3) 给右边开启“始终对相机排序” ---
+        # Always sort triangles back-to-front relative to the camera
+        # （画家算法 Painter's algorithm）
+        right.always_sort_to_camera(self.camera)
         
 
 class testbug(InteractiveScene):

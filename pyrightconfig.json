@@ -1,0 +1,6 @@
+{
+  "include": ["."],
+  "extraPaths": ["../manim"],
+  "venvPath": "../manim",
+  "venv": "venv"
+}

@@ -2,6 +2,13 @@
 *.mp4
 *.wav
 *.mp3
+*.psd
+*.ai
+*.png
+*.txt
+*.pyc
+*.md
+*.sesx
 cache/
 images/
 videos/
