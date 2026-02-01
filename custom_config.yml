@@ -1,10 +1,10 @@
 directories:
-  just_mirror_pythonfiles: True # if true,output dictionary mirrors python files
+  just_mirror_pythonfiles: false # if true,output dictionary mirrors python files
   base: "" # will be modified by --basefromfile
   subdirs:
     output: "videos"
-    raster_images: "images\\raster"
-    vector_images: "images\\vector"
+    raster_images: "images"
+    vector_images: "images"
     downloads: "downloads"
     sounds: "sounds"
     data: "data"
@@ -14,9 +14,12 @@ window:
   monitor_index: 0
   full_screen: False
 camera:
-  resolution: (1920, 1080)
+  resolution: (1920,1080)
+  # resolution: (1440, 1440)
+  # resolution: (1440, 1620) # w:h=2:3
+  # resolution: (2048, 2048)
   background_color: "#000000"
-  fps: 30
+  fps: 60  # window 模式下 fps永远是30（在 class scene __init__里设定的）
   background_opacity: 1.0
 text:
   font: "Mongolian Baiti"
@@ -36,6 +39,6 @@ sizes:
   med_small_buff: 0.25
   med_large_buff: 0.5
   large_buff: 1.0
-  default_mobject_to_edge_buff: 0.5
+  default_mobject_to_edge_buff: 0.3
   default_mobject_to_mobject_buff: 0.25
 universal_import_line: "from manim_imports_custom import *"

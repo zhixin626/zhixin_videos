@@ -1,4 +1,26 @@
+from numpy import safe_eval
 from manim_imports_custom import *
+class onlyself(InteractiveScene):
+    def construct(self):
+        # init
+        frame=self.frame
+        light=self.camera.light_source
+        self.safe=Safe()
+        # start
+        t=Text("此合集\n仅up自己可见",
+            font='WenYue XinQingNianTi (Authorization Required)',
+            alignment="CENTER",
+            t2c=dict(此合集=YELLOW,up=YELLOW)).scale(3)
+        t2=Text("此视频用来占位,保证合集存在,抱歉打扰",
+            font='WenYue XinQingNianTi (Authorization Required)',
+            alignment="CENTER").scale(1.5)
+        t2.next_to(t,DOWN,buff=SMALL_BUFF)
+        grp=VGroup(t,t2).to_mob_center(self.safe.rec)
+        # self.add(self.safe.rec)
+        t2.set_submobject_colors_by_gradient(BLUE,GREEN)
+        self.play(FadeIn(grp,lag_ratio=0.2))
+        self.wait()
+
 class test(InteractiveScene):
     def construct(self):
         # init

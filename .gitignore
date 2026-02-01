@@ -9,6 +9,9 @@
 *.pyc
 *.md
 *.sesx
+*.txt
+*.ai
+*.psd
 cache/
 images/
 videos/
@@ -20,3 +23,4 @@ sounds/
 data/
 __pycache__/
 learn_latex/
+musices/
